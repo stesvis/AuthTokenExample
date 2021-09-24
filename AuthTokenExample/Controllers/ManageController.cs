@@ -10,7 +10,7 @@ using AuthTokenExample.Models;
 
 namespace AuthTokenExample.Controllers
 {
-    [Authorize]
+    [CustomAuthorize]
     public class ManageController : Controller
     {
         private ApplicationSignInManager _signInManager;
@@ -62,8 +62,17 @@ namespace AuthTokenExample.Controllers
                 : message == ManageMessageId.AddPhoneSuccess ? "Your phone number was added."
                 : message == ManageMessageId.RemovePhoneSuccess ? "Your phone number was removed."
                 : "";
-
-            var userId = User.Identity.GetUserId();
+            string userId;
+            if (User.Identity.IsAuthenticated)
+            {
+                 userId = User.Identity.GetUserId();
+            }
+            else
+            {
+                 userId = SignInManager
+    .AuthenticationManager
+    .AuthenticationResponseGrant.Identity.GetUserId();
+            }
             var model = new IndexViewModel
             {
                 HasPassword = HasPassword(),
@@ -355,7 +364,17 @@ namespace AuthTokenExample.Controllers
 
         private bool HasPassword()
         {
-            var user = UserManager.FindById(User.Identity.GetUserId());
+            ApplicationUser user;
+            if (User.Identity.IsAuthenticated)
+            {
+                user = UserManager.FindById(User.Identity.GetUserId());
+            }
+            else
+            {
+                user = UserManager.FindById(SignInManager
+.AuthenticationManager
+.AuthenticationResponseGrant.Identity.GetUserId());
+            }
             if (user != null)
             {
                 return user.PasswordHash != null;
