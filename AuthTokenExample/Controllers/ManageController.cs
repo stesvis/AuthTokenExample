@@ -81,7 +81,12 @@ namespace AuthTokenExample.Controllers
                 Logins = await UserManager.GetLoginsAsync(userId),
                 BrowserRemembered = await AuthenticationManager.TwoFactorBrowserRememberedAsync(userId)
             };
-            return View(model);
+            if (User.Identity.IsAuthenticated)
+
+                return View(model);
+            else
+                return  Redirect("Manage");
+
         }
 
         //
