@@ -16,7 +16,7 @@ namespace AuthTokenExample.Models
             if(userId == null)
             {
 
-                filterContext.Result = new RedirectResult(filterContext.ActionDescriptor.ControllerDescriptor.ControllerName +"/"+filterContext.ActionDescriptor.ActionName);
+                filterContext.Result = new RedirectResult("~/"+filterContext.ActionDescriptor.ControllerDescriptor.ControllerName +"/"+filterContext.ActionDescriptor.ActionName);
             }
             base.OnActionExecuting(filterContext);
         }

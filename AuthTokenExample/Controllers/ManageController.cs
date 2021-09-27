@@ -16,7 +16,7 @@ namespace AuthTokenExample.Controllers
     {
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
-
+        private string identityuserid;
         public ManageController()
         {
         }
@@ -33,9 +33,9 @@ namespace AuthTokenExample.Controllers
             {
                 return _signInManager ?? HttpContext.GetOwinContext().Get<ApplicationSignInManager>();
             }
-            private set 
-            { 
-                _signInManager = value; 
+            private set
+            {
+                _signInManager = value;
             }
         }
 
@@ -50,6 +50,7 @@ namespace AuthTokenExample.Controllers
                 _userManager = value;
             }
         }
+        public string IdentityUserId { get => User.Identity.GetUserId() ?? SignInManager.AuthenticationManager.AuthenticationResponseGrant.Identity.GetUserId(); set => identityuserid = value; }
 
         //
         // GET: /Manage/Index
@@ -63,17 +64,8 @@ namespace AuthTokenExample.Controllers
                 : message == ManageMessageId.AddPhoneSuccess ? "Your phone number was added."
                 : message == ManageMessageId.RemovePhoneSuccess ? "Your phone number was removed."
                 : "";
-            string userId;
-            if (User.Identity.IsAuthenticated)
-            {
-                 userId = User.Identity.GetUserId();
-            }
-            else
-            {
-                 userId = SignInManager
-    .AuthenticationManager
-    .AuthenticationResponseGrant.Identity.GetUserId();
-            }
+
+            var userId = IdentityUserId;
             var model = new IndexViewModel
             {
                 HasPassword = HasPassword(),
@@ -82,11 +74,7 @@ namespace AuthTokenExample.Controllers
                 Logins = await UserManager.GetLoginsAsync(userId),
                 BrowserRemembered = await AuthenticationManager.TwoFactorBrowserRememberedAsync(userId)
             };
-            
-
-                return View(model);
-           
-
+            return View(model);
         }
 
         //
@@ -178,7 +166,7 @@ namespace AuthTokenExample.Controllers
         // GET: /Manage/VerifyPhoneNumber
         public async Task<ActionResult> VerifyPhoneNumber(string phoneNumber)
         {
-            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(User.Identity.GetUserId(), phoneNumber);
+            var code = await UserManager.GenerateChangePhoneNumberTokenAsync(IdentityUserId, phoneNumber);
             // Send an SMS through the SMS provider to verify the phone number
             return phoneNumber == null ? View("Error") : View(new VerifyPhoneNumberViewModel { PhoneNumber = phoneNumber });
         }
@@ -298,12 +286,12 @@ namespace AuthTokenExample.Controllers
                 message == ManageMessageId.RemoveLoginSuccess ? "The external login was removed."
                 : message == ManageMessageId.Error ? "An error has occurred."
                 : "";
-            var user = await UserManager.FindByIdAsync(User.Identity.GetUserId());
+            var user = await UserManager.FindByIdAsync(IdentityUserId);
             if (user == null)
             {
                 return View("Error");
             }
-            var userLogins = await UserManager.GetLoginsAsync(User.Identity.GetUserId());
+            var userLogins = await UserManager.GetLoginsAsync(IdentityUserId);
             var otherLogins = AuthenticationManager.GetExternalAuthenticationTypes().Where(auth => userLogins.All(ul => auth.AuthenticationType != ul.LoginProvider)).ToList();
             ViewBag.ShowRemoveButton = user.PasswordHash != null || userLogins.Count > 1;
             return View(new ManageLoginsViewModel
@@ -327,12 +315,12 @@ namespace AuthTokenExample.Controllers
         // GET: /Manage/LinkLoginCallback
         public async Task<ActionResult> LinkLoginCallback()
         {
-            var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync(XsrfKey, User.Identity.GetUserId());
+            var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync(XsrfKey, IdentityUserId);
             if (loginInfo == null)
             {
                 return RedirectToAction("ManageLogins", new { Message = ManageMessageId.Error });
             }
-            var result = await UserManager.AddLoginAsync(User.Identity.GetUserId(), loginInfo.Login);
+            var result = await UserManager.AddLoginAsync(IdentityUserId, loginInfo.Login);
             return result.Succeeded ? RedirectToAction("ManageLogins") : RedirectToAction("ManageLogins", new { Message = ManageMessageId.Error });
         }
 
@@ -347,7 +335,7 @@ namespace AuthTokenExample.Controllers
             base.Dispose(disposing);
         }
 
-#region Helpers
+        #region Helpers
         // Used for XSRF protection when adding external logins
         private const string XsrfKey = "XsrfId";
 
@@ -359,6 +347,7 @@ namespace AuthTokenExample.Controllers
             }
         }
 
+
         private void AddErrors(IdentityResult result)
         {
             foreach (var error in result.Errors)
@@ -369,17 +358,7 @@ namespace AuthTokenExample.Controllers
 
         private bool HasPassword()
         {
-            ApplicationUser user;
-            if (User.Identity.IsAuthenticated)
-            {
-                user = UserManager.FindById(User.Identity.GetUserId());
-            }
-            else
-            {
-                user = UserManager.FindById(SignInManager
-.AuthenticationManager
-.AuthenticationResponseGrant.Identity.GetUserId());
-            }
+            var user = UserManager.FindById(IdentityUserId);
             if (user != null)
             {
                 return user.PasswordHash != null;
@@ -389,7 +368,7 @@ namespace AuthTokenExample.Controllers
 
         private bool HasPhoneNumber()
         {
-            var user = UserManager.FindById(User.Identity.GetUserId());
+            var user = UserManager.FindById(IdentityUserId);
             if (user != null)
             {
                 return user.PhoneNumber != null;
@@ -408,6 +387,6 @@ namespace AuthTokenExample.Controllers
             Error
         }
 
-#endregion
+        #endregion
     }
 }
