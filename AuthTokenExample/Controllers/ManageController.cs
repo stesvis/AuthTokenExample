@@ -11,6 +11,7 @@ using AuthTokenExample.Models;
 namespace AuthTokenExample.Controllers
 {
     [CustomAuthorize]
+    [RedirectFilter]
     public class ManageController : Controller
     {
         private ApplicationSignInManager _signInManager;
@@ -81,11 +82,10 @@ namespace AuthTokenExample.Controllers
                 Logins = await UserManager.GetLoginsAsync(userId),
                 BrowserRemembered = await AuthenticationManager.TwoFactorBrowserRememberedAsync(userId)
             };
-            if (User.Identity.IsAuthenticated)
+            
 
                 return View(model);
-            else
-                return  Redirect("Manage");
+           
 
         }
 
